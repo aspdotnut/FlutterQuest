@@ -1,0 +1,6 @@
+@FlutterQuest.FlutterQuestApi_HostAddress = http://localhost:6969
+
+GET {{FlutterQuest.FlutterQuestApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

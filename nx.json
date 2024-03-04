@@ -9,5 +9,10 @@
       "default"
     ],
     "sharedGlobals": []
-  }
+  },
+  "plugins": [
+    "@nx-dotnet/core",
+    "@nxrocks/nx-flutter"
+  ],
+  "targetDefaults": {}
 }
