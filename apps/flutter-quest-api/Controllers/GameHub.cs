@@ -13,15 +13,6 @@ public class GameHub : Hub
     /// </summary>
     public override async Task OnConnectedAsync()
     {
-        await Clients.All.SendAsync("ReceiveMessage", $"{Context.ConnectionId} joined");
-    }
-    
-    /// <summary>
-    /// postman json:
-    /// { "arguments": [], "target": "JoinLobby", "type": 1 }
-    /// </summary>
-    public async Task JoinLobby()
-    {
         var flutterQuestDbContext = new FlutterQuestDbContext();
         
         if (!int.TryParse(Context.User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value, out int userId))
