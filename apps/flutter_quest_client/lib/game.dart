@@ -29,7 +29,7 @@ class _GamePageState extends State<GamePage> {
     var keys = ['Arrow Up', 'Arrow Down', 'Arrow Left', 'Arrow Right'];
 
     if (keys.contains(key) && (event is KeyDownEvent || event is KeyRepeatEvent)) {
-      move(key);
+      // TODO
     }
 
     return false;

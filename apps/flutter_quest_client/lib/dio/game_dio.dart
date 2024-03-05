@@ -12,15 +12,3 @@ Future<void> authcheck() async {
     print(e);
   }
 }
-
-Future<void> move(key) async {
-
-  try {
-    final data = jsonEncode({'direction': key});
-    String response = await postData('/movement/move', data);
-    print(response);
-  }
-  catch (e) {
-    print(e);
-  }
-}
