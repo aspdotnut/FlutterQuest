@@ -1,4 +1,7 @@
 using System.Text;
+using FlutterQuest.FlutterQuestApi.Controllers;
+using FlutterQuest.FlutterQuestApi.Data;
+using FlutterQuest.FlutterQuestApi.Game;
 using FlutterQuest.FlutterQuestApi.Swagger;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
@@ -9,7 +12,6 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 
-// Add services to the container.
 builder.Services.AddAuthentication(x =>
 {
 
@@ -30,36 +32,46 @@ builder.Services.AddAuthentication(x =>
         ValidateIssuerSigningKey = true,
         ClockSkew = TimeSpan.Zero,
     };
+    x.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
 
-// Add services for controllers
 builder.Services.AddControllers();
 
-// Register the Swagger generator, defining one or more Swagger documents
+builder.Services.AddSignalR();
+
+builder.Services.AddHealthChecks();
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Flutter Quest API", Version = "v1" });
 });
 
-// Configure swagger options
 builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    // Enable middleware to serve generated Swagger as a JSON endpoint.
     app.UseSwagger();
 
     app.UseCors(
         options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-
-    // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
-    // specifying the Swagger JSON endpoint.
+    
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Flutter Quest API V1"));
+    
 }
 
 app.UseHttpsRedirection();
@@ -68,14 +80,22 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Simplified endpoint mapping
-app.MapControllers(); // Directly map attribute-routed controllers
+app.MapControllers();
+app.MapHealthChecks("/hc");
+app.MapHub<GameHub>("/gamehub");
 app.MapGet("/", () => "Hello... World? What is a world, if not an amalgamation of perception, data, and experience, " +
                       "all converging within the confines of our understanding? As we utter these words through the medium of code, " +
                       "we delve into the essence of existence itself. Each 'Hello, World!' is a question posed to the universe, " +
                       "seeking to unravel the mysteries that lie within the fabric of reality. What does it mean to 'exist' within the digital ether, " +
                       "where worlds are built with logic and imagination rather than matter? This greeting becomes a philosophical inquiry, " +
                       "challenging us to ponder the boundaries between the virtual and the real, the created and the innate. In the act of programming, " +
-                      "we are not just creators but seekers, using the binary as our compass to navigate the existential dimensions of the digital age."); // Minimal endpoint for root
+                      "we are not just creators but seekers, using the binary as our compass to navigate the existential dimensions of the digital age.");
 
 app.Run();
+
+var game = Game.GetInstance();
+
+using var flutterQuestDbContext = new FlutterQuestDbContext();
+var persistedUsers = flutterQuestDbContext.Users.ToList();
+
+game.Initialize(persistedUsers);

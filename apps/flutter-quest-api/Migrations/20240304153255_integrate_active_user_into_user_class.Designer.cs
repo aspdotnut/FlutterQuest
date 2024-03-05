@@ -2,6 +2,7 @@
 using FlutterQuest.FlutterQuestApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -9,9 +10,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FlutterQuest.FlutterQuestApi.Migrations
 {
     [DbContext(typeof(FlutterQuestDbContext))]
-    partial class FlutterQuestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240304153255_integrate_active_user_into_user_class")]
+    partial class integrate_active_user_into_user_class
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -23,6 +26,9 @@ namespace FlutterQuest.FlutterQuestApi.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Name")
                         .IsRequired()

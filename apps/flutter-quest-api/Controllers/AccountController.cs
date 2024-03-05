@@ -18,19 +18,12 @@ public class AccountController(IConfiguration config) : ControllerBase
     private readonly string _tokenSecret = config["JwtSettings:SecretKey"]!;
     private readonly TimeSpan _accessTokenLifetime = TimeSpan.FromMinutes(15);
     private readonly TimeSpan _refreshTokenLifetime = TimeSpan.FromHours(6);
-
-
-    [HttpGet("healthcheck")]
-    public ActionResult GetHealthyMessage()
-    {
-        return Ok("I'm healthy!");
-    }
     
     [Authorize]
     [HttpGet("authcheck")]
     public ActionResult GetAuthMessage()
     {
-        return Ok("I'm authenticated!");
+        return Ok( new { message = "I'm authenticated!" });
     }
     
     [HttpPost("login")]
@@ -41,7 +34,7 @@ public class AccountController(IConfiguration config) : ControllerBase
         
         if (user == null)
         {
-            return Unauthorized(new { Message = "User not found" });
+            return Unauthorized( new { Message = "User not found" });
         }
         
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -79,10 +72,7 @@ public class AccountController(IConfiguration config) : ControllerBase
         var accessJwt = tokenHandler.WriteToken(accessToken);
         var refreshJwt = tokenHandler.WriteToken(refreshToken);
         
-        flutterQuestDbContext.Users.Update(user);
-        flutterQuestDbContext.SaveChanges();
-        
-        return Ok(new { AccessToken = accessJwt , RefreshToken = refreshJwt });
+        return Ok( new { AccessToken = accessJwt , RefreshToken = refreshJwt });
     }
     
     [HttpPost("register")]
@@ -136,22 +126,18 @@ public class AccountController(IConfiguration config) : ControllerBase
         var accessJwt = tokenHandler.WriteToken(accessToken);
         var refreshJwt = tokenHandler.WriteToken(refreshToken);
         
-        flutterQuestDbContext.Users.Update(user);
-        flutterQuestDbContext.SaveChanges();
-        
-        return Ok(new { AccessToken = accessJwt , RefreshToken = refreshJwt });
+        return Ok( new { AccessToken = accessJwt , RefreshToken = refreshJwt });
     }
     
     [Authorize]
     [HttpPost("refresh")]
     public ActionResult Refresh()
     {
-        
         var flutterQuestDbContext = new FlutterQuestDbContext();
 
         if (!int.TryParse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value, out int userId))
         {
-            return BadRequest();
+            return Unauthorized( new { Message = "User not found" });
         }
 
         var user = flutterQuestDbContext.Users.FirstOrDefault(a => a.Id == userId);
@@ -196,26 +182,6 @@ public class AccountController(IConfiguration config) : ControllerBase
         var accessJwt = tokenHandler.WriteToken(accessToken);
         var refreshJwt = tokenHandler.WriteToken(refreshToken);
         
-        return Ok(new { AccessToken = accessJwt , RefreshToken = refreshJwt });
-    }
-    
-    [HttpGet("logout")]
-    public ActionResult Logout()
-    {
-        var flutterQuestDbContext = new FlutterQuestDbContext();
-
-        if (!int.TryParse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value, out int userId))
-        {
-            return BadRequest();
-        }
-
-        var user = flutterQuestDbContext.Users.FirstOrDefault(a => a.Id == userId);
-        
-        if (user == null)
-        {
-            return Unauthorized(new { Message = "User not found" });
-        }
-        
-        return Ok(new { Message = "Logged out" });
+        return Ok( new { AccessToken = accessJwt , RefreshToken = refreshJwt });
     }
 }

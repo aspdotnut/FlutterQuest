@@ -6,7 +6,6 @@ namespace FlutterQuest.FlutterQuestApi.Data;
 public class FlutterQuestDbContext : DbContext
 {
     public DbSet<User> Users { get; set; }
-    public DbSet<ActiveUser> ActiveUsers { get; set; }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
