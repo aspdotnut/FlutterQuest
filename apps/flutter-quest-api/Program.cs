@@ -14,7 +14,6 @@ var config = builder.Configuration;
 
 builder.Services.AddAuthentication(x =>
 {
-
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -50,9 +49,18 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddSignalR();
 
-builder.Services.AddHealthChecks();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policyBuilder => policyBuilder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
 
 builder.Services.AddSwaggerGen(c =>
 {
@@ -73,6 +81,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Flutter Quest API V1"));
     
 }
+
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 app.UseRouting();

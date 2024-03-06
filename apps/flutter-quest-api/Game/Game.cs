@@ -43,13 +43,13 @@ public class Game
         existingUser.Y = user.Y;
     }
     
-    public void RemoveUser(string name)
+    public void RemoveUser(int id)
     {
-        if (users.All(u => u.Name != name)) return;
+        if (users.All(u => u.Id != id)) return;
         
-        users.RemoveAll(u => u.Name == name);
+        users.RemoveAll(u => u.Id == id);
     }
-
+    
     public static bool CheckMovement(MovementIntent movementIntent)
     {
         return !(movementIntent.X < 0 || movementIntent.X > Width || movementIntent.Y < 0 || movementIntent.Y > Height);

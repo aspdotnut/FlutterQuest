@@ -17,6 +17,7 @@ public class GameHub : Hub
         
         if (!int.TryParse(Context.User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value, out int userId))
         {
+            await Clients.Caller.SendAsync("ReceiveMessage", 1, new ErrorMessageViewModel { Message = "User not found" });
             return;
         }
 
@@ -24,12 +25,13 @@ public class GameHub : Hub
         
         if (user == null)
         {
+            await Clients.Caller.SendAsync("ReceiveMessage", 1, new ErrorMessageViewModel { Message = "User not found" });
             return;
         }
 
         Game.Game.GetInstance().AddUser(user);
         
-        await Clients.All.SendAsync("ReceiveMessage", new ActiveUserViewModel() { Id = user.Id, Name = user.Name, X = user.X, Y = user.Y });
+        await Clients.All.SendAsync("ReceiveMessage", 2, new ActiveUserViewModel { Id = user.Id, Name = user.Name, X = user.X, Y = user.Y, IsActive = true });
     }
     
     /// <summary>
@@ -40,6 +42,7 @@ public class GameHub : Hub
     {
         if (!int.TryParse(Context.User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value, out int userId))
         {
+            await Clients.Caller.SendAsync("ReceiveMessage", 1, new ErrorMessageViewModel { Message = "User not found" });
             return;
         }
 
@@ -47,6 +50,7 @@ public class GameHub : Hub
         
         if (user == null)
         {
+            await Clients.Caller.SendAsync("ReceiveMessage", 1, new ErrorMessageViewModel { Message = "User not found" });
             return;
         }
 
@@ -57,6 +61,39 @@ public class GameHub : Hub
         var updatedUser = intent.Commit();
         Game.Game.GetInstance().UpdateUser(updatedUser);
 
-        await Clients.All.SendAsync("ReceiveMessage", new ActiveUserViewModel() { Id = updatedUser.Id, Name = updatedUser.Name, X = updatedUser.X, Y = updatedUser.Y });
+        await Clients.All.SendAsync("ReceiveMessage", 2, new ActiveUserViewModel { Id = updatedUser.Id, Name = updatedUser.Name, X = updatedUser.X, Y = updatedUser.Y, IsActive = true });
+    }
+    
+    public override async Task OnDisconnectedAsync(Exception exception)
+    {
+        if (!int.TryParse(Context.User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value, out int userId))
+        {
+            await Clients.Caller.SendAsync("ReceiveMessage", 1, new ErrorMessageViewModel { Message = "User not found" });
+            return;
+        }
+
+        var user = Game.Game.GetInstance().GetUser(userId);
+        
+        if (user == null)
+        {
+            await Clients.Caller.SendAsync("ReceiveMessage", 1, new ErrorMessageViewModel { Message = "User not found" });
+            return;
+        }
+        
+        var flutterQuestDbContext = new FlutterQuestDbContext();
+        
+        var dbUser = flutterQuestDbContext.Users.FirstOrDefault(u => u.Id == userId);
+        
+        if (dbUser != null)
+        {
+            dbUser.X = user.X;
+            dbUser.Y = user.Y;
+        
+            await flutterQuestDbContext.SaveChangesAsync();
+        }
+        
+        Game.Game.GetInstance().RemoveUser(user.Id);
+        
+        await Clients.All.SendAsync("ReceiveMessage", 2, new ActiveUserViewModel { Id = user.Id, Name = user.Name, X = user.X, Y = user.Y, IsActive = false });
     }
 }

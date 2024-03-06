@@ -21,6 +21,7 @@ public class GameController : ControllerBase
             Name = u.Name,
             X = u.X,
             Y = u.Y,
+            IsActive = true,
         }));
     }
 }
