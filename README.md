@@ -45,4 +45,4 @@ The Flutter client is a frontend service developed in Dart using Flutter. It pro
 
 ## License
 
-This project is licensed under the GNU GPLv3 License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the GNU AGPLv3 License - see the [LICENSE.md](LICENSE.md) file for details
