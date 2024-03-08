@@ -1,13 +1,30 @@
+// FlutterQuest
+// A simple chatroom with certain game elements.
+// Copyright (C) 2024 aspdotnut
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:signalr_netcore/ihub_protocol.dart';
 import 'package:signalr_netcore/signalr_client.dart' hide ConnectionState;
 
 import '/data/shared_prefs.dart';
 import '/dio/account_dio.dart';
 import '/dio/game_dio.dart';
+import 'dio/dio_util.dart';
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key});
@@ -18,17 +35,23 @@ class GamePage extends StatefulWidget {
 
 class _GamePageState extends State<GamePage> {
 
-  late HttpConnectionOptions httpOptions;
-  late HubConnection hubConnection;
-
-  final maxRetryCount = 5;
+  late final HubConnection hubConnection;
 
   @override
   void initState() {
 
     super.initState();
 
-    httpOptions = HttpConnectionOptions(
+    Future<String> getAccessToken() async {
+      var token = await getPrefs('accessToken');
+      if (token == null) {
+        await logOut();
+        throw Exception('No access token');
+      }
+      return token;
+    }
+
+    var httpOptions = HttpConnectionOptions(
         accessTokenFactory: () async => await getAccessToken());
     hubConnection = HubConnectionBuilder()
         .withUrl('http://localhost:6969/gamehub', options: httpOptions)
@@ -38,44 +61,39 @@ class _GamePageState extends State<GamePage> {
 
     hubConnection.on('ReceiveMessage', _handleReceivedMessage);
 
+    hubConnection.onclose( ({Exception? error}) => print("Connection Closed: " + error.toString()));
+
     ServicesBinding.instance.keyboard.addHandler(_onKey);
   }
 
   @override
   void dispose() {
+
     hubConnection.stop();
 
     ServicesBinding.instance.keyboard.removeHandler(_onKey);
     super.dispose();
   }
 
-  _startHubConnection([int retryCount = 0]) async {
-    if (retryCount >= maxRetryCount) {
-      print('Max retry count reached');
-      return;
-    }
-
+  _startHubConnection() async {
     try {
       await hubConnection.start();
       print('SignalR connection started.');
     } catch (e) {
       print('Error starting SignalR connection: $e');
-      await Future.delayed(Duration(seconds: 3));
-      return _startHubConnection(retryCount + 1);
     }
   }
 
   void _handleReceivedMessage(List<Object?>? arguments) {
-    int messageType = arguments?[0] as int? ?? 0;
-    String payload = arguments?[1] as String? ?? '';
+    var messageType = arguments?[0] as int;
+    var payload = arguments?[1] as Object;
 
-    if (messageType == 0 || payload == '') {
-      print('type or payload missing, request not allowed? implement refreshtoken dio later');
-      return;
+    if (messageType == 0) {
+      _addErrorMessage(payload);
     }
 
     if (messageType == 1) {
-      _addErrorMessage(payload);
+      _initialPlayerPos(payload);
     }
 
     if (messageType == 2) {
@@ -87,19 +105,59 @@ class _GamePageState extends State<GamePage> {
     }
   }
 
-  void _addErrorMessage(String payload) {
-    var message = jsonDecode(payload);
+  void _addErrorMessage(Object? payload) {
+
+    if (payload is! Map) {
+      print('Payload is not a Map.');
+      return;
+    }
+
+    var message = payload['message'] as String;
+
     print('Error: $message');
   }
 
-  void _updatePlayerPos(String payload) {
-    var message = jsonDecode(payload);
-    print('Player position: $message');
+  void _initialPlayerPos(Object? payload) {
+
+    if (payload is! Map) {
+      print('Payload is not a Map.');
+      return;
+    }
+
+    var userId = payload['id'] as int;
+    var name = payload['name'] as String;
+    var x = payload['x'] as int;
+    var y = payload['y'] as int;
+
+    print('Player $name ($userId) is at $x, $y.');
   }
 
-  void _addChatMessage(String payload) {
-    var message = jsonDecode(payload);
-    print('Chat: $message');
+  void _updatePlayerPos(Object? payload) {
+
+    if (payload is! Map) {
+      print('Payload is not a Map.');
+      return;
+    }
+
+    var userId = payload['id'] as int;
+    var name = payload['name'] as String;
+    var x = payload['x'] as int;
+    var y = payload['y'] as int;
+
+    print('Player $name ($userId) moved to $x, $y.');
+  }
+
+  void _addChatMessage(Object? payload) {
+
+    if (payload is! Map) {
+      print('Payload is not a Map.');
+      return;
+    }
+
+    var name = payload['name'] as String;
+    var message = payload['message'] as String;
+
+    print('Chat: $name - $message');
   }
 
   Future<void> _submit() async {
@@ -107,6 +165,9 @@ class _GamePageState extends State<GamePage> {
   }
 
   Future<void> _logout() async {
+
+    await hubConnection.stop();
+
     await logOut();
   }
 
@@ -117,10 +178,47 @@ class _GamePageState extends State<GamePage> {
     var keys = ['Arrow Up', 'Arrow Down', 'Arrow Left', 'Arrow Right'];
 
     if (keys.contains(key) && (event is KeyDownEvent || event is KeyRepeatEvent)) {
+
+      _accessTokenCheck();
       hubConnection.invoke('Move', args: [key]);
     }
 
     return false;
+  }
+
+  void _accessTokenCheck() async {
+
+    var token = await getPrefs('accessToken');
+
+    if (token == null) {
+
+      await logOut();
+      throw Exception('No access token');
+    }
+
+    var parts = token.split('.');
+    var payload = parts[1];
+    var normalized = base64Url.normalize(payload);
+    var resp = utf8.decode(base64Url.decode(normalized));
+    var map = json.decode(resp);
+    var exp = map['exp'] as int;
+
+    var now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    var oneMinuteFromNow = now + 60;
+
+    if (exp < oneMinuteFromNow) {
+
+      bool isSuccessfulRefresh = await refreshToken();
+
+      if (!isSuccessfulRefresh) {
+
+        await handleFailedRefresh();
+        throw Exception('Failed to refresh token');
+      } else {
+
+        print('Token refreshed: ${await getPrefs('accessToken')}');
+      }
+    }
   }
 
   @override
@@ -182,9 +280,5 @@ class _GamePageState extends State<GamePage> {
         ),
       ),
     );
-  }
-
-  static getAccessToken() {
-    return getPrefs('accessToken');
   }
 }
