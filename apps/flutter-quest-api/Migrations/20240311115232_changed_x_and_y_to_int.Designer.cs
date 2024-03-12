@@ -2,6 +2,7 @@
 using FlutterQuest.FlutterQuestApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -9,9 +10,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FlutterQuest.FlutterQuestApi.Migrations
 {
     [DbContext(typeof(FlutterQuestDbContext))]
-    partial class FlutterQuestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240311115232_changed_x_and_y_to_int")]
+    partial class changed_x_and_y_to_int
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -25,9 +28,6 @@ namespace FlutterQuest.FlutterQuestApi.Migrations
                         .HasColumnType("int");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<bool>("LegMovement")
                         .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Name")

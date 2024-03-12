@@ -15,15 +15,27 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace FlutterQuest.FlutterQuestApi.Models;
+import 'package:equatable/equatable.dart';
 
-public class User(string name, string password)
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = name;
-    public string Password { get; set; } = password;
-    public int X { get; set; }
-    public int Y { get; set; }
-    public bool LegMovement { get; set; }
-    public bool IsActive { get; set; }
+class User extends Equatable {
+
+  final int id;
+  final String name;
+  final int x;
+  final int y;
+  final bool legMovement;
+  final bool isActive;
+
+  const User({
+
+    required this.id,
+    required this.name,
+    required this.x,
+    required this.y,
+    required this.legMovement,
+    required this.isActive,
+  });
+
+  @override
+  List<Object?> get props => [id, name, x, y, legMovement, isActive];
 }

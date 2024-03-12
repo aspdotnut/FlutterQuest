@@ -85,6 +85,7 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (context, state) {
 
         _isLoggedIn = state.isLoggedIn;
+
         return _isLoggedIn ? const GamePage() : const LoginPage();
       },
     );

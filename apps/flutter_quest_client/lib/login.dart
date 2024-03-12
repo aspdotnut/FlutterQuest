@@ -60,38 +60,58 @@ class _LoginPageState extends State<LoginPage> {
       ),
       body: Center(
 
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Enter your username',
+        child: ConstrainedBox(
+          constraints: const BoxConstraints.tightFor(width: 600),
+
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+
+            children: <Widget>[
+
+              Text(
+                'Welcome to Flutter Quest!',
+                style: Theme.of(context).textTheme.headline4,
               ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Enter your password',
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                ElevatedButton(
-                    onPressed: _login,
-                    child: const Text('Login')),
-                const SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: _register,
-                  child: const Text('Register'),
+
+              const SizedBox(height: 40),
+
+              TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Enter your username',
                 ),
-              ],
-            ),
-          ],
+              ),
+
+              const SizedBox(height: 20),
+
+              TextField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Enter your password',
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              Row(
+
+                children: [
+
+                  ElevatedButton(
+                      onPressed: _login,
+                      child: const Text('Login')),
+                  const SizedBox(width: 20),
+
+                  ElevatedButton(
+                    onPressed: _register,
+                    child: const Text('Register'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -15,15 +15,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace FlutterQuest.FlutterQuestApi.Models;
+import '/models/chat.dart';
 
-public class User(string name, string password)
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = name;
-    public string Password { get; set; } = password;
-    public int X { get; set; }
-    public int Y { get; set; }
-    public bool LegMovement { get; set; }
-    public bool IsActive { get; set; }
+abstract class ChatEvent {}
+
+class ChatAdded extends ChatEvent {
+
+  final Chat chat;
+
+  ChatAdded(this.chat);
 }

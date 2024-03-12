@@ -19,28 +19,29 @@ namespace FlutterQuest.FlutterQuestApi.Models;
 
 public class MovementIntent
 {
-    public double X { get; set; }
-    public double Y { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
     private User user { get; set; }
     public MovementIntent(User user, string direction)
     {
+        const int stepSize = 4;
         this.user = user;
         switch (direction)
         {
             case "Arrow Up":
                 X = user.X;
-                Y = user.Y - 4;
+                Y = user.Y - stepSize;
                 break;
             case "Arrow Down":
                 X = user.X;
-                Y = user.Y + 4;
+                Y = user.Y + stepSize;
                 break;
             case "Arrow Left":
-                X = user.X - 4;
+                X = user.X - stepSize;
                 Y = user.Y;
                 break;
             case "Arrow Right":
-                X = user.X + 4;
+                X = user.X + stepSize;
                 Y = user.Y;
                 break;
             default:
@@ -52,6 +53,8 @@ public class MovementIntent
     {
         user.X = X;
         user.Y = Y;
+        
+        user.LegMovement = !user.LegMovement;
 
         return user;
     }

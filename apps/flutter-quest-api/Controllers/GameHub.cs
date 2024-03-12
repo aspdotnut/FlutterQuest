@@ -59,12 +59,13 @@ public class GameHub : Hub
 
         foreach (var existingUser in Game.Game.GetInstance().GetUsers())
         {
-            await Clients.Caller.SendAsync("ReceiveMessage", 1, new ActiveUserViewModel { Id = existingUser.Id, Name = existingUser.Name, X = existingUser.X, Y = existingUser.Y, IsActive = true });
+            await Clients.Caller.SendAsync("ReceiveMessage", 1, new ActiveUserViewModel { Id = existingUser.Id, Name = existingUser.Name, X = existingUser.X, Y = existingUser.Y, LegMovement = existingUser.LegMovement, IsActive = true });
         }
 
         Game.Game.GetInstance().AddUser(user);
         
-        await Clients.All.SendAsync("ReceiveMessage", 1, new ActiveUserViewModel { Id = user.Id, Name = user.Name, X = user.X, Y = user.Y, IsActive = true });
+        await Clients.All.SendAsync("ReceiveMessage", 3, new ChatMessageViewModel { Name = "System", Message = $"{user.Name} has joined the chat." });
+        await Clients.All.SendAsync("ReceiveMessage", 1, new ActiveUserViewModel { Id = user.Id, Name = user.Name, X = user.X, Y = user.Y, LegMovement = user.LegMovement, IsActive = true });
     }
     
     /// <summary>
@@ -94,7 +95,30 @@ public class GameHub : Hub
         var updatedUser = intent.Commit();
         Game.Game.GetInstance().UpdateUser(updatedUser);
 
-        await Clients.All.SendAsync("ReceiveMessage", 2, new ActiveUserViewModel { Id = updatedUser.Id, Name = updatedUser.Name, X = updatedUser.X, Y = updatedUser.Y, IsActive = true });
+        await Clients.All.SendAsync("ReceiveMessage", 2, new ActiveUserViewModel { Id = updatedUser.Id, Name = updatedUser.Name, X = updatedUser.X, Y = updatedUser.Y, LegMovement = updatedUser.LegMovement, IsActive = true });
+    }
+    
+    /// <summary>
+    /// postman json:
+    /// { "arguments": ["Hello"], "target": "Chat", "type": 1 }
+    /// </summary>
+    public async Task Chat(string message)
+    {
+        if (!int.TryParse(Context.User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value, out int userId))
+        {
+            await Clients.Caller.SendAsync("ReceiveMessage", 0, new ErrorMessageViewModel { Message = "User not found" });
+            return;
+        }
+
+        var user = Game.Game.GetInstance().GetUser(userId);
+        
+        if (user == null)
+        {
+            await Clients.Caller.SendAsync("ReceiveMessage", 0, new ErrorMessageViewModel { Message = "User not found" });
+            return;
+        }
+        
+        await Clients.All.SendAsync("ReceiveMessage", 3, new ChatMessageViewModel { Name = user.Name, Message = message });
     }
     
     [AllowAnonymous]
@@ -122,6 +146,7 @@ public class GameHub : Hub
         {
             dbUser.X = user.X;
             dbUser.Y = user.Y;
+            dbUser.LegMovement = user.LegMovement;
             dbUser.IsActive = false;
         
             await flutterQuestDbContext.SaveChangesAsync();
@@ -129,6 +154,7 @@ public class GameHub : Hub
         
         Game.Game.GetInstance().RemoveUser(user.Id);
         
-        await Clients.All.SendAsync("ReceiveMessage", 2, new ActiveUserViewModel { Id = user.Id, Name = user.Name, X = user.X, Y = user.Y, IsActive = false });
+        await Clients.All.SendAsync("ReceiveMessage", 3, new ChatMessageViewModel { Name = "System", Message = $"{user.Name} has left the chat." });
+        await Clients.All.SendAsync("ReceiveMessage", 2, new ActiveUserViewModel { Id = user.Id, Name = user.Name, X = user.X, Y = user.Y, LegMovement = user.LegMovement, IsActive = false });
     }
 }

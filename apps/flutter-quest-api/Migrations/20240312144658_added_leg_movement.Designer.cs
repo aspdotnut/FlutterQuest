@@ -2,6 +2,7 @@
 using FlutterQuest.FlutterQuestApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -9,9 +10,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FlutterQuest.FlutterQuestApi.Migrations
 {
     [DbContext(typeof(FlutterQuestDbContext))]
-    partial class FlutterQuestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240312144658_added_leg_movement")]
+    partial class added_leg_movement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -15,15 +15,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace FlutterQuest.FlutterQuestApi.Models;
+import 'dart:async';
+import 'package:bloc/bloc.dart';
+import '/models/chat.dart';
+import 'chat_event.dart';
 
-public class User(string name, string password)
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = name;
-    public string Password { get; set; } = password;
-    public int X { get; set; }
-    public int Y { get; set; }
-    public bool LegMovement { get; set; }
-    public bool IsActive { get; set; }
+class ChatBloc extends Bloc<ChatEvent, List<Chat>> {
+  ChatBloc()
+      : super([
+    const Chat(name: 'System', message: 'Welcome to the chat!'),
+    const Chat(name: 'System', message: 'Type your message below and press Submit.'),
+    const Chat(name: 'System', message: 'Use the arrow keys to move around.'),
+    const Chat(name: 'System', message: 'Press the Logout button to log out.'),
+    const Chat(name: 'System', message: 'Have fun!'),
+  ]){
+
+    on<ChatAdded>((event, emit) async {
+      final updatedChat = List<Chat>.from(state);
+      updatedChat.add(event.chat);
+      emit(updatedChat);
+    });
+  }
 }

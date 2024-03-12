@@ -21,36 +21,36 @@ namespace FlutterQuest.FlutterQuestApi.Game;
 
 public class Game
 {
-    private List<User> users;
-    private const double Width = 200;
-    private const double Height = 200;
+    private List<User> _users;
+    private const int Width = 9001;
+    private const int Height = 9001;
     private Game()
     {
-        users = new List<User>();
+        _users = new List<User>();
     }
     
     public void Initialize(List<User> persistedUsers)
     {
-        users = persistedUsers;
+        _users = persistedUsers;
     }
     
     public void AddUser(User user)
     {
-        if (users.Any(u => u.Name == user.Name))
+        if (_users.Any(u => u.Name == user.Name))
         {
             return;
         }
-        users.Add(user);
+        _users.Add(user);
     }
     
     public User? GetUser(int id)
     {
-        return users.FirstOrDefault(u => u.Id == id);
+        return _users.FirstOrDefault(u => u.Id == id);
     }
 
     public void UpdateUser(User user)
     {
-        var existingUser = users.FirstOrDefault(u => u.Id == user.Id);
+        var existingUser = _users.FirstOrDefault(u => u.Id == user.Id);
         if (existingUser == null)
         {
             return;
@@ -58,13 +58,14 @@ public class Game
         
         existingUser.X = user.X;
         existingUser.Y = user.Y;
+        existingUser.LegMovement = user.LegMovement;
     }
     
     public void RemoveUser(int id)
     {
-        if (users.All(u => u.Id != id)) return;
+        if (_users.All(u => u.Id != id)) return;
         
-        users.RemoveAll(u => u.Id == id);
+        _users.RemoveAll(u => u.Id == id);
     }
     
     public static bool CheckMovement(MovementIntent movementIntent)
@@ -74,7 +75,7 @@ public class Game
     
     public List<User> GetUsers()
     {
-        return users;
+        return _users;
     }
     
     private static Game? _instance;
