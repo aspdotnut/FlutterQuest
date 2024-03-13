@@ -23,6 +23,8 @@ public class ActiveUserViewModel
     public string Name { get; set; }
     public int X { get; set; }
     public int Y { get; set; }
+    public string HatColor { get; set; }
+    public string ShirtColor { get; set; }
     public bool LegMovement { get; set; }
     public bool IsActive { get; set; }
 }

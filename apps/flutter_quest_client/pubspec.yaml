@@ -28,5 +28,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - lib/assets/map.png
     - lib/assets/pixel-boi-a.png
     - lib/assets/pixel-boi-b.png
+    - lib/assets/pixel-boi-idle.png
+    - lib/assets/pixel-boi-hat.png
+    - lib/assets/pixel-boi-shirt.png

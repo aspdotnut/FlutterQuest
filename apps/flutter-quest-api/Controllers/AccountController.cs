@@ -103,8 +103,12 @@ public class AccountController(IConfiguration config) : ControllerBase
             return Conflict(new { Message = "User with name " + userViewModel.Name + " already exists" });
         }
         
-        var user = new User(userViewModel.Name, userViewModel.Password);
-        
+        var user = new User(userViewModel.Name, userViewModel.Password)
+        {
+            HatColor = GenerateRandomColorHex(),
+            ShirtColor = GenerateRandomColorHex()
+        };
+
         flutterQuestDbContext.Add(user);
         flutterQuestDbContext.SaveChanges();
         
@@ -200,5 +204,16 @@ public class AccountController(IConfiguration config) : ControllerBase
         var refreshJwt = tokenHandler.WriteToken(refreshToken);
         
         return Ok( new { AccessToken = accessJwt , RefreshToken = refreshJwt });
+    }
+
+    private static string GenerateRandomColorHex()
+    {
+        var random = new Random();
+        var red = random.Next(256);
+        var green = random.Next(256);
+        var blue = random.Next(256);
+
+        // Convert to hex and return
+        return $"0xff{red:X2}{green:X2}{blue:X2}";
     }
 }

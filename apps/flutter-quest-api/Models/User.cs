@@ -26,4 +26,6 @@ public class User(string name, string password)
     public int Y { get; set; }
     public bool LegMovement { get; set; }
     public bool IsActive { get; set; }
+    public string HatColor { get; set; }
+    public string ShirtColor { get; set; }
 }

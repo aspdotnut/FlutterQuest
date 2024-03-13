@@ -28,19 +28,35 @@ public class MovementIntent
         this.user = user;
         switch (direction)
         {
-            case "Arrow Up":
+            case "UpLeft":
+                X = user.X - stepSize;
+                Y = user.Y - stepSize;
+                break;
+            case "UpRight":
+                X = user.X + stepSize;
+                Y = user.Y - stepSize;
+                break;
+            case "DownLeft":
+                X = user.X - stepSize;
+                Y = user.Y + stepSize;
+                break;
+            case "DownRight":
+                X = user.X + stepSize;
+                Y = user.Y + stepSize;
+                break;
+            case "Up":
                 X = user.X;
                 Y = user.Y - stepSize;
                 break;
-            case "Arrow Down":
+            case "Down":
                 X = user.X;
                 Y = user.Y + stepSize;
                 break;
-            case "Arrow Left":
+            case "Left":
                 X = user.X - stepSize;
                 Y = user.Y;
                 break;
-            case "Arrow Right":
+            case "Right":
                 X = user.X + stepSize;
                 Y = user.Y;
                 break;

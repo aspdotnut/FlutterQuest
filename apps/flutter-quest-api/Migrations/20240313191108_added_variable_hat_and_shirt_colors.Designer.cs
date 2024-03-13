@@ -2,6 +2,7 @@
 using FlutterQuest.FlutterQuestApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -9,9 +10,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FlutterQuest.FlutterQuestApi.Migrations
 {
     [DbContext(typeof(FlutterQuestDbContext))]
-    partial class FlutterQuestDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240313191108_added_variable_hat_and_shirt_colors")]
+    partial class added_variable_hat_and_shirt_colors
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,7 +57,7 @@ namespace FlutterQuest.FlutterQuestApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 #pragma warning restore 612, 618
         }

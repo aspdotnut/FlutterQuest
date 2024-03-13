@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
@@ -54,6 +55,9 @@ class _GamePageState extends State<GamePage> {
 
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+
+  final Set<LogicalKeyboardKey> _pressedKeys = {};
+  Timer? _pollingTimer;
 
   late final HubConnection hubConnection;
 
@@ -97,6 +101,8 @@ class _GamePageState extends State<GamePage> {
     hubConnection.onclose( ({Exception? error}) => print("Connection Closed: " + error.toString()));
 
     ServicesBinding.instance.keyboard.addHandler(_onKey);
+
+    _startPollingKeys();
   }
 
   @override
@@ -108,6 +114,9 @@ class _GamePageState extends State<GamePage> {
     _focusNode.dispose();
 
     ServicesBinding.instance.keyboard.removeHandler(_onKey);
+
+    _stopPollingKeys();
+
     super.dispose();
   }
 
@@ -185,10 +194,15 @@ class _GamePageState extends State<GamePage> {
     var name = payload['name'] as String;
     var x = payload['x'] as int;
     var y = payload['y'] as int;
+    var hatColorString = payload['hatColor'] as String;
+    var shirtColorString = payload['shirtColor'] as String;
     var legMovement = payload['legMovement'] as bool;
     var isActive = payload['isActive'] as bool;
 
-    User user = User(id: userId, name: name, x: x, y: y, legMovement: legMovement, isActive: isActive);
+    var hatColor = int.parse(hatColorString);
+    var shirtColor = int.parse(shirtColorString);
+
+    User user = User(id: userId, name: name, x: x, y: y, hatColor: hatColor, shirtColor: shirtColor, legMovement: legMovement, isActive: isActive);
 
     _addOrUpdateUser(user);
   }
@@ -204,10 +218,15 @@ class _GamePageState extends State<GamePage> {
     var name = payload['name'] as String;
     var x = payload['x'] as int;
     var y = payload['y'] as int;
+    var hatColorString = payload['hatColor'] as String;
+    var shirtColorString = payload['shirtColor'] as String;
     var legMovement = payload['legMovement'] as bool;
     var isActive = payload['isActive'] as bool;
 
-    User user = User(id: userId, name: name, x: x, y: y, legMovement: legMovement, isActive: isActive);
+    var hatColor = int.parse(hatColorString);
+    var shirtColor = int.parse(shirtColorString);
+
+    User user = User(id: userId, name: name, x: x, y: y, hatColor: hatColor, shirtColor: shirtColor, legMovement: legMovement, isActive: isActive);
 
     if (!isActive) {
 
@@ -270,22 +289,196 @@ class _GamePageState extends State<GamePage> {
 
   bool _onKey(KeyEvent event) {
 
-    final key = event.logicalKey.keyLabel;
+    final key = event.logicalKey;
 
-    var keys = ['Arrow Up', 'Arrow Down', 'Arrow Left', 'Arrow Right'];
-
-    if (keys.contains(key) && (event is KeyDownEvent || event is KeyRepeatEvent)) {
-
-      _accessTokenCheck();
-      hubConnection.invoke('Move', args: [key]);
+    if (event is KeyDownEvent || event is KeyRepeatEvent) {
+      _pressedKeys.add(key);
     }
 
-    if (key == 'Enter' && event is KeyDownEvent) {
-
-      _submit();
+    if (event is KeyUpEvent) {
+      _pressedKeys.remove(key);
     }
 
     return false;
+  }
+
+  void _startPollingKeys() {
+    _pollingTimer = Timer.periodic(Duration(milliseconds: 42), (timer) {
+      _checkPressedKeys();
+    });
+  }
+
+  void _stopPollingKeys() {
+    _pollingTimer?.cancel();
+  }
+
+  void _checkPressedKeys() {
+
+    if ((_pressedKeys.contains(LogicalKeyboardKey.arrowUp) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowDown) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowLeft) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowRight)) ||
+        (_pressedKeys.contains(LogicalKeyboardKey.arrowUp) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowDown) &&
+        !_pressedKeys.contains(LogicalKeyboardKey.arrowLeft) &&
+        !_pressedKeys.contains(LogicalKeyboardKey.arrowRight)) ||
+        (!_pressedKeys.contains(LogicalKeyboardKey.arrowUp) &&
+        !_pressedKeys.contains(LogicalKeyboardKey.arrowDown) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowLeft) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowRight))) {
+
+      return;
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowUp) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowLeft) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowRight)) {
+
+      _accessTokenCheck();
+      hubConnection.invoke('Move', args: ['Up']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowDown) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowLeft) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowRight)) {
+
+      _accessTokenCheck();
+      hubConnection.invoke('Move', args: ['Down']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowLeft) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowUp) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowDown)) {
+
+      _accessTokenCheck();
+      hubConnection.invoke('Move', args: ['Left']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowRight) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowUp) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowDown)){
+
+      _accessTokenCheck();
+      hubConnection.invoke('Move', args: ['Right']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowUp) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowLeft)) {
+
+      _accessTokenCheck();
+
+      if (userBloc.state.firstWhereOrNull((u) => u.id == currentUserId) == null) {
+        return;
+      }
+
+      if (userBloc.state.firstWhere((u) => u.id == currentUserId).x == 0) {
+        hubConnection.invoke('Move', args: ['Up']);
+        return;
+      }
+
+      if (userBloc.state.firstWhere((u) => u.id == currentUserId).y == 0) {
+        hubConnection.invoke('Move', args: ['Left']);
+        return;
+      }
+
+      hubConnection.invoke('Move', args: ['UpLeft']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowUp) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowRight)) {
+
+      _accessTokenCheck();
+
+      if (userBloc.state.firstWhereOrNull((u) => u.id == currentUserId) == null) {
+        return;
+      }
+
+      if (userBloc.state.firstWhere((u) => u.id == currentUserId).x == 3000) {
+        hubConnection.invoke('Move', args: ['Up']);
+        return;
+      }
+
+      if (userBloc.state.firstWhere((u) => u.id == currentUserId).y == 0) {
+        hubConnection.invoke('Move', args: ['Right']);
+        return;
+      }
+
+      hubConnection.invoke('Move', args: ['UpRight']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowDown) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowLeft)) {
+
+      _accessTokenCheck();
+
+      if (userBloc.state.firstWhereOrNull((u) => u.id == currentUserId) == null) {
+        return;
+      }
+
+      if (userBloc.state.firstWhere((u) => u.id == currentUserId).x == 0) {
+        hubConnection.invoke('Move', args: ['Down']);
+        return;
+      }
+
+      if (userBloc.state.firstWhere((u) => u.id == currentUserId).y == 3000) {
+        hubConnection.invoke('Move', args: ['Left']);
+        return;
+      }
+
+      hubConnection.invoke('Move', args: ['DownLeft']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowDown) &&
+        _pressedKeys.contains(LogicalKeyboardKey.arrowRight)) {
+
+      _accessTokenCheck();
+
+      if (userBloc.state.firstWhereOrNull((u) => u.id == currentUserId) == null) {
+        return;
+      }
+
+      if (userBloc.state.firstWhere((u) => u.id == currentUserId).x == 3000) {
+        hubConnection.invoke('Move', args: ['Down']);
+        return;
+      }
+
+      if (userBloc.state.firstWhere((u) => u.id == currentUserId).y == 3000) {
+        hubConnection.invoke('Move', args: ['Right']);
+        return;
+      }
+
+      hubConnection.invoke('Move', args: ['DownRight']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowUp)) {
+
+      _accessTokenCheck();
+      hubConnection.invoke('Move', args: ['Up']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowDown)) {
+
+      _accessTokenCheck();
+      hubConnection.invoke('Move', args: ['Down']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowLeft)) {
+
+      _accessTokenCheck();
+      hubConnection.invoke('Move', args: ['Left']);
+    }
+
+    else if (_pressedKeys.contains(LogicalKeyboardKey.arrowRight)) {
+
+      _accessTokenCheck();
+      hubConnection.invoke('Move', args: ['Right']);
+    }
+
+    if (_pressedKeys.contains(LogicalKeyboardKey.enter)) {
+
+      _accessTokenCheck();
+      _submit();
+    }
   }
 
   void _accessTokenCheck() async {
@@ -356,15 +549,32 @@ class _GamePageState extends State<GamePage> {
                               child: BlocBuilder<UserBloc, List<User>>(
                                 bloc: userBloc,
                                 builder: (context, state) {
+
                                   return state.firstWhereOrNull((u) => u.id == currentUserId) != null ?
                                     LayoutBuilder(
                                     builder: (context, constraints) {
+
                                       return Stack(
                                         clipBehavior: Clip.none,
+
                                         children: [
+
                                           Positioned(
                                             top: constraints.maxHeight / 2 - state.firstWhere((u) => u.id == currentUserId).y,
                                             left: constraints.maxWidth / 2 - state.firstWhere((u) => u.id == currentUserId).x,
+
+                                            child: Ink.image(
+                                              image: AssetImage('lib/assets/map.png'),
+                                              width: 3044,
+                                              height: 3100,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+
+                                          Positioned(
+                                            top: constraints.maxHeight / 2 - state.firstWhere((u) => u.id == currentUserId).y - 1,
+                                            left: constraints.maxWidth / 2 - state.firstWhere((u) => u.id == currentUserId).x - 1,
+
                                             child: Container(
                                               decoration: BoxDecoration(
                                                 border: Border.all(
@@ -372,69 +582,108 @@ class _GamePageState extends State<GamePage> {
                                                   width: 1,
                                                 ),
                                               ),
-                                              width: 9002,
-                                              height: 9002,
-                                              child: Stack(
-                                                clipBehavior: Clip.none,
-                                                children: [...state.where((u) => u.id != currentUserId).map((user) =>
 
-                                                  Positioned(
-                                                    top: user.y.toDouble(),
-                                                    left: user.x.toDouble(),
+                                              child: SizedBox(
+                                                width: 3044,
+                                                height: 3100,
 
-                                                    child: SizedBox(
-                                                      width: 33,
-                                                      height: 75,
+                                                child: Stack(
+                                                  clipBehavior: Clip.none,
 
-                                                      child: Stack(
-                                                        clipBehavior: Clip.none,
-                                                        children: [
+                                                  children: [...state.where((u) => u.id != currentUserId).map((user) =>
 
-                                                          Positioned(
-                                                            bottom: 75,
-                                                            left: -50,
-                                                            right: -50,
+                                                    Positioned(
+                                                      top: user.y.toDouble() + 1,
+                                                      left: user.x.toDouble() + 1,
 
-                                                            child: Stack(
-                                                              clipBehavior: Clip.none,
-                                                              alignment: Alignment.center,
+                                                      child: SizedBox(
+                                                        width: 44,
+                                                        height: 100,
 
-                                                              children: [
-                                                                FittedBox(
-                                                                  fit: BoxFit.none,
+                                                        child: Stack(
+                                                          clipBehavior: Clip.none,
+                                                          children: [
 
-                                                                  child: Text(
-                                                                    user.name,
-                                                                    overflow: TextOverflow.visible,
-                                                                    softWrap: false,
-                                                                    style: const TextStyle(fontSize: 12),
-                                                                  )
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
+                                                            Positioned(
+                                                              bottom: 100,
+                                                              left: -50,
+                                                              right: -50,
 
-                                                          Align(
-                                                            alignment: Alignment.bottomCenter,
+                                                              child: Stack(
+                                                                clipBehavior: Clip.none,
+                                                                alignment: Alignment.center,
 
-                                                            child: Ink.image(
+                                                                children: [
+                                                                  FittedBox(
+                                                                    fit: BoxFit.none,
 
-                                                              image: AssetImage(
-                                                                  user.legMovement
-                                                                      ? 'lib/assets/pixel-boi-a.png'
-                                                                      : 'lib/assets/pixel-boi-b.png'
+                                                                    child: Text(
+                                                                      user.name,
+                                                                      overflow: TextOverflow.visible,
+                                                                      softWrap: false,
+                                                                      style: const TextStyle(fontSize: 12),
+                                                                    )
+                                                                  ),
+                                                                ],
                                                               ),
-                                                              width: 33,
-                                                              height: 75,
-                                                              fit: BoxFit.cover,
                                                             ),
-                                                          ),
-                                                        ],
-                                                      ),
+
+                                                            Align(
+                                                              alignment: Alignment.bottomCenter,
+
+                                                              child: Ink.image(
+
+                                                                image: AssetImage(
+                                                                    user.legMovement
+                                                                        ? 'lib/assets/pixel-boi-a.png'
+                                                                        : 'lib/assets/pixel-boi-b.png'
+                                                                ),
+                                                                width: 44,
+                                                                height: 100,
+                                                                fit: BoxFit.cover,
+                                                              ),
+                                                            ),
+
+                                                            Align(
+                                                              alignment: Alignment.bottomCenter,
+
+                                                              child: ColorFiltered(
+                                                                colorFilter: ColorFilter.mode(
+                                                                  Color(user.hatColor),
+                                                                  BlendMode.modulate,
+                                                                ),
+                                                                child: Image.asset(
+                                                                  'lib/assets/pixel-boi-hat.png',
+                                                                  width: 44,
+                                                                  height: 100,
+                                                                  fit: BoxFit.cover,
+                                                                ),
+                                                              ),
+                                                            ),
+
+                                                            Align(
+                                                              alignment: Alignment.bottomCenter,
+
+                                                              child: ColorFiltered(
+                                                                colorFilter: ColorFilter.mode(
+                                                                  Color(user.shirtColor),
+                                                                  BlendMode.modulate,
+                                                                ),
+                                                                child: Image.asset(
+                                                                  'lib/assets/pixel-boi-shirt.png',
+                                                                  width: 44,
+                                                                  height: 100,
+                                                                  fit: BoxFit.cover,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      )
                                                     )
-                                                  )
-                                                ).toList(),
-                                                ],
+                                                  ).toList(),
+                                                  ],
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -443,17 +692,19 @@ class _GamePageState extends State<GamePage> {
                                             left: constraints.maxWidth / 2,
 
                                             child: Stack(
+
                                               children: [
+
                                                 SizedBox(
-                                                  width: 33,
-                                                  height: 75,
+                                                  width: 44,
+                                                  height: 100,
 
                                                   child: Stack(
                                                     clipBehavior: Clip.none,
                                                     children: [
 
                                                       Positioned(
-                                                        bottom: 75,
+                                                        bottom: 100,
                                                         left: -50,
                                                         right: -50,
 
@@ -486,9 +737,43 @@ class _GamePageState extends State<GamePage> {
                                                                   ? 'lib/assets/pixel-boi-a.png'
                                                                   : 'lib/assets/pixel-boi-b.png'
                                                           ),
-                                                          width: 33,
-                                                          height: 75,
+                                                          width: 44,
+                                                          height: 100,
                                                           fit: BoxFit.cover,
+                                                        ),
+                                                      ),
+
+                                                      Align(
+                                                        alignment: Alignment.bottomCenter,
+
+                                                        child: ColorFiltered(
+                                                          colorFilter: ColorFilter.mode(
+                                                            Color(state.firstWhere((u) => u.id == currentUserId).hatColor),
+                                                            BlendMode.modulate,
+                                                          ),
+                                                          child: Image.asset(
+                                                            'lib/assets/pixel-boi-hat.png',
+                                                            width: 44,
+                                                            height: 100,
+                                                            fit: BoxFit.cover,
+                                                          ),
+                                                        ),
+                                                      ),
+
+                                                      Align(
+                                                        alignment: Alignment.bottomCenter,
+
+                                                        child: ColorFiltered(
+                                                          colorFilter: ColorFilter.mode(
+                                                            Color(state.firstWhere((u) => u.id == currentUserId).shirtColor),
+                                                            BlendMode.modulate,
+                                                          ),
+                                                          child: Image.asset(
+                                                            'lib/assets/pixel-boi-shirt.png',
+                                                            width: 44,
+                                                            height: 100,
+                                                            fit: BoxFit.cover,
+                                                          ),
                                                         ),
                                                       ),
                                                     ],
@@ -547,6 +832,7 @@ class _GamePageState extends State<GamePage> {
                         reverse: true,
                         itemCount: chatList.length,
                         itemBuilder: (context, index) {
+
                           final chat = chatList[chatList.length - 1 - index];
 
                           return ListTile(

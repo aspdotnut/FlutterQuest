@@ -23,6 +23,8 @@ class User extends Equatable {
   final String name;
   final int x;
   final int y;
+  final int hatColor;
+  final int shirtColor;
   final bool legMovement;
   final bool isActive;
 
@@ -32,10 +34,12 @@ class User extends Equatable {
     required this.name,
     required this.x,
     required this.y,
+    required this.hatColor,
+    required this.shirtColor,
     required this.legMovement,
     required this.isActive,
   });
 
   @override
-  List<Object?> get props => [id, name, x, y, legMovement, isActive];
+  List<Object?> get props => [id, name, x, y, hatColor, shirtColor, legMovement, isActive];
 }

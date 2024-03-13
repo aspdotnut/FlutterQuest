@@ -22,8 +22,8 @@ namespace FlutterQuest.FlutterQuestApi.Game;
 public class Game
 {
     private List<User> _users;
-    private const int Width = 9001;
-    private const int Height = 9001;
+    private const int Width = 3000;
+    private const int Height = 3000;
     private Game()
     {
         _users = new List<User>();
